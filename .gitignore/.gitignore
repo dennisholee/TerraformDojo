@@ -7,3 +7,6 @@
 
 # .tfvars files
 *.tfvars
+
+# Ignore custom files
+*.[0-9]*

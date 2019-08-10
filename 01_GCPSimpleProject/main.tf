@@ -5,6 +5,7 @@ provider "google" {
 
 module "vpc" {
   source = "./modules/global"
+  
 #   
 #   var_vpc-name                         = "${var.var_vpc-name}"
 #   var_vpc-auto_create_subnet           = "${var.var_vpc-auto_create_subnet}"
@@ -13,4 +14,10 @@ module "vpc" {
 #   var_vpc_subnet-region                = "${var.var_vpc_subnet-region}"
 #   var_vpc_subnet-ip_range              = "${var.var_vpc_subnet-ip_range}"
 #   var_vpc_subnet-private_google_access = "${var.var_vpc_subnet-private_google_access}"
+}
+
+module "compute" {
+  source  = "./modules/internal"
+
+  my-vpc-internal = "${module.vpc.my-vpc-internal}"
 }

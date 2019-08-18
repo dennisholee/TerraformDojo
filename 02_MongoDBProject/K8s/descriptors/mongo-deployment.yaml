@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+spec:
+  containers:
+  - name: mongo
+    image: asia.gcr.io/foo789-terraform-admin/mongo:latest

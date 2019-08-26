@@ -8,7 +8,7 @@ provider "google" {
 
 resource "google_compute_project_metadata_item" "ssh-keys" {
   key   = "ssh-keys"
-  value = "${file("${var.public_key}")}"
+  value = "dennislee:${file("${var.public_key}")}"
 }
 
 module "global" {
@@ -52,14 +52,14 @@ module "web-svr" {
   web_server-tags   = ["fw-idmz-ssh-ingress"]
 }
 
-module "squid-svr" {
-  source = "./modules/services/squid/"
-
-  squid_server-zone   = "europe-west2-a"
-  squid_server-subnet = "${module.global.my-idmz-subnet}"
-
-  squid_server-tags   = ["fw-idmz-ssh-ingress", "fw-idmz-proxy-ingress"]
-}
+# module "squid-svr" {
+#   source = "./modules/services/squid/"
+# 
+#   squid_server-zone   = "europe-west2-a"
+#   squid_server-subnet = "${module.global.my-idmz-subnet}"
+# 
+#   squid_server-tags   = ["fw-idmz-ssh-ingress", "fw-idmz-proxy-ingress"]
+# }
 
 module "fw-idmz-ssh-ingress" {
   source = "./modules/firewalls/"
@@ -77,7 +77,7 @@ module "fw-idmz-proxy-ingress" {
   source = "./modules/firewalls/"
 
   firewall-name          = "fw-idmz-proxy-ingress"
-  firewall-network       = "${module.global.my-edmz-subnet}"
+  firewall-network       = "${module.global.my-idmz-subnet}"
   firewall-direction     = "ingress"
   firewall-protocol      = "TCP"
   firewall-ports         = ["3128"]
@@ -126,6 +126,7 @@ module "bastion-svr" {
   bastion_server-tags   = ["fw-ssh-ingress"]
 }
 
+# TODO: Relocate to idmz and install Squid3
 module "idmz-edmz-router" {
   source = "./modules/services/router"
 
@@ -133,7 +134,7 @@ module "idmz-edmz-router" {
   router_server-primary_subnet   = "${module.global.my-edmz-subnet}"
   router_server-secondary_subnet = "${module.global.my-idmz-subnet}"
   router_server-zone             = "europe-west2-a"
-  router_server-tags             = ["fw-edmz-ssh-ingress", "fw-edmz-http-ingress", "fw-edmz-https-ingress"]
+  router_server-tags             = ["fw-ssh-ingress", "fw-idmz-proxy-ingress"]
 }
 
 module "edmz-testbox-svr" {
@@ -178,4 +179,15 @@ module "fw-edmz-https-ingress" {
   firewall-protocol      = "TCP"
   firewall-ports         = ["443"]
   firewall-target_tags   = ["fw-edmz-https-ingress"] 
+}
+
+module "fw-edmz-proxy-ingress" {
+  source = "./modules/firewalls/"
+
+  firewall-name          = "fw-edmz-proxy-ingress"
+  firewall-network       = "${module.global.my-edmz-subnet}"
+  firewall-direction     = "ingress"
+  firewall-protocol      = "TCP"
+  firewall-ports         = ["3128"]
+  firewall-target_tags   = ["fw-edmz-proxy-ingress"] 
 }

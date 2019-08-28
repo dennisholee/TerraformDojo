@@ -40,40 +40,40 @@ module "internal-testbox-svr" {
   testbox_server-tags   = ["fw-ssh-ingress"]
 }
 
-module "int-web-svr" {
-  source = "./modules/services/web/"
+# TODO: Add internal web server
+# module "int-web-svr" {
+#   source = "./modules/services/web/"
+# 
+# #  web_server-zone   = "europe-west2-a"
+# #  web_server-subnet = "${module.global.my-internal-subnet}"
+# 
+#   web_group-subnetwork  = "${module.global.my-idmz-subnet}" 
+#   web_group-tags        = ["fw-internal-ssh-ingress", "fw-internal-http-ingress"]
+#   web_group-environment = ["dev"] 
+# }
+# 
+# module "fw-internal-ssh-ingress" {
+#   source = "./modules/firewalls/"
+# 
+#   firewall-name          = "fw-internal-ssh-ingress"
+#   firewall-network       = "${module.global.my-internal-subnet}"
+#   firewall-direction     = "ingress"
+#   firewall-protocol      = "TCP"
+#   firewall-ports         = ["22"]
+#   firewall-target_tags   = ["fw-internal-ssh-ingress"] 
+# }
+# 
+# module "fw-internal-http-ingress" {
+#   source = "./modules/firewalls/"
+# 
+#   firewall-name          = "fw-internal-http-ingress"
+#   firewall-network       = "${module.global.my-internal-subnet}"
+#   firewall-direction     = "ingress"
+#   firewall-protocol      = "TCP"
+#   firewall-ports         = ["80"]
+#   firewall-target_tags   = ["fw-internal-http-ingress"] 
+# }
 
-#  web_server-zone   = "europe-west2-a"
-#  web_server-subnet = "${module.global.my-internal-subnet}"
-
-  web_group-subnetwork  = "${module.global.my-idmz-subnet}" 
-  web_group-tags        = ["fw-internal-ssh-ingress", "fw-internal-http-ingress"]
-  web_group-environment = ["dev"] 
-}
-
-module "fw-internal-ssh-ingress" {
-  source = "./modules/firewalls/"
-
-  firewall-name          = "fw-internal-ssh-ingress"
-  firewall-network       = "${module.global.my-internal-subnet}"
-  firewall-direction     = "ingress"
-  firewall-protocol      = "TCP"
-  firewall-ports         = ["22"]
-  firewall-target_tags   = ["fw-internal-ssh-ingress"] 
-}
-
-module "fw-internal-http-ingress" {
-  source = "./modules/firewalls/"
-
-  firewall-name          = "fw-internal-http-ingress"
-  firewall-network       = "${module.global.my-internal-subnet}"
-  firewall-direction     = "ingress"
-  firewall-protocol      = "TCP"
-  firewall-ports         = ["80"]
-  firewall-target_tags   = ["fw-internal-http-ingress"] 
-}
-
-module "fw-idmz-https-ingress" {
 # ------------------------------------------------------------------------------
 # iDMZ subnetwork
 # ------------------------------------------------------------------------------

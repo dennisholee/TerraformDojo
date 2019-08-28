@@ -40,16 +40,52 @@ module "internal-testbox-svr" {
   testbox_server-tags   = ["fw-ssh-ingress"]
 }
 
+module "int-web-svr" {
+  source = "./modules/services/web/"
+
+#  web_server-zone   = "europe-west2-a"
+#  web_server-subnet = "${module.global.my-internal-subnet}"
+
+  web_group-subnetwork  = "${module.global.my-idmz-subnet}" 
+  web_group-tags        = ["fw-internal-ssh-ingress", "fw-internal-http-ingress"]
+  web_group-environment = ["dev"] 
+}
+
+module "fw-internal-ssh-ingress" {
+  source = "./modules/firewalls/"
+
+  firewall-name          = "fw-internal-ssh-ingress"
+  firewall-network       = "${module.global.my-internal-subnet}"
+  firewall-direction     = "ingress"
+  firewall-protocol      = "TCP"
+  firewall-ports         = ["22"]
+  firewall-target_tags   = ["fw-internal-ssh-ingress"] 
+}
+
+module "fw-internal-http-ingress" {
+  source = "./modules/firewalls/"
+
+  firewall-name          = "fw-internal-http-ingress"
+  firewall-network       = "${module.global.my-internal-subnet}"
+  firewall-direction     = "ingress"
+  firewall-protocol      = "TCP"
+  firewall-ports         = ["80"]
+  firewall-target_tags   = ["fw-internal-http-ingress"] 
+}
+
+module "fw-idmz-https-ingress" {
 # ------------------------------------------------------------------------------
 # iDMZ subnetwork
 # ------------------------------------------------------------------------------
 module "web-svr" {
   source = "./modules/services/web/"
 
-  web_server-zone   = "europe-west2-a"
-  web_server-subnet = "${module.global.my-idmz-subnet}"
+#  web_server-zone   = "europe-west2-a"
+#  web_server-subnet = "${module.global.my-idmz-subnet}"
 
-  web_server-tags   = ["fw-idmz-ssh-ingress"]
+  web_group-subnetwork  = "${module.global.my-idmz-subnet}" 
+  web_group-tags        = ["fw-idmz-ssh-ingress", "fw-idmz-http-ingress"]
+  web_group-environment = ["dev"] 
 }
 
 # module "squid-svr" {
@@ -190,4 +226,17 @@ module "fw-edmz-proxy-ingress" {
   firewall-protocol      = "TCP"
   firewall-ports         = ["3128"]
   firewall-target_tags   = ["fw-edmz-proxy-ingress"] 
+}
+
+module "glb" {
+  source = "./modules/network/glb"
+
+  glb-address_name           = "smep-dev-ip-address"
+  glb-fwd_rule_name          = "smep-fwd-rule"
+  glb-fwd_rule_port_range    = "80"
+  glb-https_proxy_name       = "smep-proxy-name"
+  glb-url_mapper_name        = "smep-mapper"
+  glb-backend_service_name   = "smep-backend-service" 
+  glb-compute_instance_group = "${module.web-svr.compute-instance-group}"
+  glb-health_check           = ["${module.web-svr.health-check}"]
 }

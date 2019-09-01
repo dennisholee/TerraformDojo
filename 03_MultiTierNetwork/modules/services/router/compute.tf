@@ -34,7 +34,9 @@ resource "google_compute_instance" "router_server" {
 
   tags = var.router_server-tags
 
-  metadata_startup_script = "sudo apt-get update; sudo apt-get install router -y"
+
+# TODO: Parameterize value
+  metadata_startup_script = "sudo route del default; sudo route add default gw 172.16.4.1 eth1"
 
 #  depends_on = [
   #  "${var.router_server-subnet}",

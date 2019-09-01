@@ -50,4 +50,8 @@ sudo ip route add 172.16.3.1 src 172.16.3.3 dev eth1 table rt1
 sudo ip route add default via 172.16.3.1 dev eth1 table rt1
 sudo ip rule add from 172.16.3.3/24 table rt1
 sudo ip rule add to 172.16.3.3/24 table rt1
+
+sudo route del default
+sudo route add default gw 172.16.4.1 eth1
 ```
+

@@ -84,7 +84,7 @@ module "web-svr" {
 #  web_server-subnet = "${module.global.my-idmz-subnet}"
 
   web_group-subnetwork  = "${module.global.my-idmz-subnet}" 
-  web_group-tags        = ["fw-idmz-ssh-ingress", "fw-idmz-http-ingress"]
+  web_group-tags        = ["fw-idmz-ssh-ingress", "fw-idmz-http-ingress", "fw-edmz-lbhealthcheck-ingress"]
   web_group-environment = ["dev"] 
 }
 
@@ -96,6 +96,16 @@ module "web-svr" {
 # 
 #   squid_server-tags   = ["fw-idmz-ssh-ingress", "fw-idmz-proxy-ingress"]
 # }
+
+module "idmz-squid" {
+  source = "./modules/services/router"
+
+  router_server-name             = "idmz-idmz-squid"
+  router_server-primary_subnet   = "${module.global.my-idmz-subnet}"
+  router_server-secondary_subnet = "${module.global.my-edmz-subnet}"
+  router_server-zone             = "europe-west2-a"
+  router_server-tags             = ["fw-ssh-ingress", "fw-idmz-proxy-ingress"]
+}
 
 module "fw-idmz-ssh-ingress" {
   source = "./modules/firewalls/"
@@ -142,6 +152,18 @@ module "fw-idmz-https-ingress" {
   firewall-target_tags   = ["fw-idmz-https-ingress"] 
 }
 
+module "fw-idmz-lbhealthcheck-ingress" {
+  source = "./modules/firewalls/"
+
+  firewall-name          = "fw-idmz-lbhealthcheck-ingress"
+  firewall-network       = "${module.global.my-idmz-subnet}"
+  firewall-direction     = "ingress"
+  firewall-protocol      = "TCP"
+  firewall-ports         = ["80"]
+  firewall-source_range  = ["35.191.0.0/16", "130.211.0.0/22"]
+  firewall-target_tags   = ["fw-edmz-lbhealthcheck-ingress"] 
+}
+
 # ------------------------------------------------------------------------------
 # eDMZ subnetwork
 # ------------------------------------------------------------------------------
@@ -163,15 +185,15 @@ module "bastion-svr" {
 }
 
 # TODO: Relocate to idmz and install Squid3
-module "idmz-edmz-router" {
-  source = "./modules/services/router"
-
-  router_server-name             = "idmz-edmz-router"
-  router_server-primary_subnet   = "${module.global.my-edmz-subnet}"
-  router_server-secondary_subnet = "${module.global.my-idmz-subnet}"
-  router_server-zone             = "europe-west2-a"
-  router_server-tags             = ["fw-ssh-ingress", "fw-idmz-proxy-ingress"]
-}
+# module "idmz-edmz-router" {
+#   source = "./modules/services/router"
+# 
+#   router_server-name             = "idmz-edmz-router"
+#   router_server-primary_subnet   = "${module.global.my-edmz-subnet}"
+#   router_server-secondary_subnet = "${module.global.my-idmz-subnet}"
+#   router_server-zone             = "europe-west2-a"
+#   router_server-tags             = ["fw-ssh-ingress", "fw-idmz-proxy-ingress"]
+# }
 
 module "edmz-testbox-svr" {
   source = "./modules/services/testbox/"
@@ -240,3 +262,5 @@ module "glb" {
   glb-compute_instance_group = "${module.web-svr.compute-instance-group}"
   glb-health_check           = ["${module.web-svr.health-check}"]
 }
+
+

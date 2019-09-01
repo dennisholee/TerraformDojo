@@ -27,27 +27,30 @@ resource "google_compute_network" "my-edmz-network" {
 # -------------------------------------------------------------------------------
 
 resource "google_compute_network_peering" "peering-edmz-to-idmz" {
-  name = "peering-edmz-to-idmz"
-  network = "${google_compute_network.my-edmz-network.self_link}"
+  name         = "peering-edmz-to-idmz"
+  network      = "${google_compute_network.my-edmz-network.self_link}"
   peer_network = "${google_compute_network.my-idmz-network.self_link}"
 }
 
 resource "google_compute_network_peering" "peering-idmz-to-edmz" {
-  name = "peering-idmz-to-edmz"
-  network = "${google_compute_network.my-idmz-network.self_link}"
+  name         = "peering-idmz-to-edmz"
+  network      = "${google_compute_network.my-idmz-network.self_link}"
   peer_network = "${google_compute_network.my-edmz-network.self_link}"
+  depends_on   = ["google_compute_network_peering.peering-edmz-to-idmz"]
 }
 
 resource "google_compute_network_peering" "peering-idmz-to-internal" {
-  name = "peering-idmz-to-internal"
-  network = "${google_compute_network.my-idmz-network.self_link}"
+  name         = "peering-idmz-to-internal"
+  network      = "${google_compute_network.my-idmz-network.self_link}"
   peer_network = "${google_compute_network.my-internal-network.self_link}"
+  depends_on   = ["google_compute_network_peering.peering-idmz-to-edmz"]
 }
 
 resource "google_compute_network_peering" "peering-internal-to-idmz" {
-  name = "peering-internal-to-idmz"
-  network = "${google_compute_network.my-internal-network.self_link}"
+  name         = "peering-internal-to-idmz"
+  network      = "${google_compute_network.my-internal-network.self_link}"
   peer_network = "${google_compute_network.my-idmz-network.self_link}"
+  depends_on   = ["google_compute_network_peering.peering-internal-to-idmz"]
 }
 
 # -------------------------------------------------------------------------------

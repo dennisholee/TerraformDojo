@@ -50,3 +50,11 @@ Error: Permission 'cloudkms.cryptoKeyVersions.useToEncrypt' denied for resource 
   note: 'Exception occurred in retry method that was not classified as transient'
 }
 ```
+
+# Update Debian
+```
+sudo apt-get update
+sudo apt-get install curl software-properties-common
+curl -sL https://deb.nodesource.com/setup_12.x | sudo bash -
+sudo apt-get install nodejs
+```

@@ -33,3 +33,20 @@ etag: BwWSwkLV6jQ=
 version: 1
 ```
 
+# Insufficient Permission Error Example
+```sh
+> node app.js 
+Error: Permission 'cloudkms.cryptoKeyVersions.useToEncrypt' denied for resource 'projects/foo789-terraform-admin/locations/asia-east2/keyRings/keyring-example/cryptoKeys/kms-secret'.
+    at Http2CallStream.<anonymous> (/Users/dennislee/Devs/Terraform/TerraformDojo/06_KMS/app/node_modules/@grpc/grpc-js/build/src/client.js:96:45)
+    at Http2CallStream.emit (events.js:214:15)
+    at /Users/dennislee/Devs/Terraform/TerraformDojo/06_KMS/app/node_modules/@grpc/grpc-js/build/src/call-stream.js:71:22
+    at processTicksAndRejections (internal/process/task_queues.js:75:11) {
+  code: 7,
+  details: "Permission 'cloudkms.cryptoKeyVersions.useToEncrypt' denied for resource 'projects/foo789-terraform-admin/locations/asia-east2/keyRings/keyring-example/cryptoKeys/kms-secret'.",
+  metadata: Metadata {
+    options: undefined,
+    internalRepr: Map { 'grpc-server-stats-bin' => [Array] }
+  },
+  note: 'Exception occurred in retry method that was not classified as transient'
+}
+```

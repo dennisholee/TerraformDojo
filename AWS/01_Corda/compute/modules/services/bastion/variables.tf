@@ -1,0 +1,37 @@
+variable "app" {
+  type        = string
+  default     = "contour"
+  description = "Application name"
+}
+
+
+variable "env" {
+  type        = string
+  description = "Environment name"
+}
+
+variable "vpc_id" {
+  type        = string
+  description = "VPC ID"
+}
+
+variable "subnet_name"{
+  type        = string
+  description = "Subnet name"
+}
+
+variable "subnet_id"{
+  type        = string
+  description = "Subnet ID"
+}
+
+
+variable "igw"{
+  type        = string
+  description = "Internet gateway"
+}
+
+variable "key_pair" {
+  type        = string
+  description = "SSH Key"
+}

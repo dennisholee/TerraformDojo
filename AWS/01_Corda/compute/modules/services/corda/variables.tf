@@ -4,6 +4,7 @@ variable "app" {
   description = "Application name"
 }
 
+
 variable "env" {
   type        = string
   description = "Environment name"
@@ -19,7 +20,7 @@ variable "subnet_name"{
   description = "Subnet name"
 }
 
-variable "subnet_ids"{
+variable "subnet_ids" {
   type        = map
   description = "Subnet ID"
 }

@@ -1,35 +1,29 @@
 provider "aws" {
-  region = "us-east-1"
-}
-
-locals {
-    edmz_cidr    = "172.16.0.0/16"
-    edmz_subnet1 = "172.16.1.0/24"
+  region = var.region
 }
 
 #===============================================================================
 # VPC
 #===============================================================================
 
-#-------------------------------------------------------------------------------
-# eDMZ
-#-------------------------------------------------------------------------------
-
 resource "aws_vpc" "vpc_edmz" {
-  cidr_block = local.edmz_cidr
+  cidr_block = var.edmz_cidr
   tags = {
     Name = "${local.appenv}-edmz-vpc"
   }
 }
 
-resource "aws_subnet" "subnet_edmz_az1" {
-  vpc_id            = aws_vpc.vpc_edmz.id
-  cidr_block        = local.edmz_subnet1
-  availability_zone = "us-east-1a"
+
+resource "aws_subnet" "subnet_edmz_az" {
+  count                   = length(var.az_subnet_mapping)
+  
+  vpc_id                  = aws_vpc.vpc_edmz.id
+  cidr_block              = lookup(var.az_subnet_mapping[count.index], "cidr")
+  availability_zone       = lookup(var.az_subnet_mapping[count.index], "az")
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${local.appenv}-edmz-1a-subnet"
+    Name = "${local.appenv}-edmz-${lookup(var.az_subnet_mapping[count.index], "name")}-subnet"
   }
 }
 
@@ -38,10 +32,11 @@ resource "aws_subnet" "subnet_edmz_az1" {
 #------------------------------------------------------------------
 
 resource "aws_internet_gateway" "edmz_igw" {
+
   vpc_id = aws_vpc.vpc_edmz.id
 
   tags = {
-    Name = "${local.appenv}-edmz-1b-igw"
+    Name = "${local.appenv}-edmz-igw"
   }
 }
 
@@ -62,16 +57,19 @@ resource "aws_route_table" "edmz_rt" {
 }
 
 resource "aws_route_table_association" "subnet-association" {
-  subnet_id      = aws_subnet.subnet_edmz_az1.id
+  count          = length(var.az_subnet_mapping)
+
+  subnet_id      = element(aws_subnet.subnet_edmz_az.*.id, count.index)
   route_table_id = aws_route_table.edmz_rt.id
 }
 
 #------------------------------------------------------------------
-# External Gateway 
+# External IP Address
 #------------------------------------------------------------------
 
 resource "aws_eip" "edmz_nat_eip" {
-  vpc      = true
+  count      = length(var.az_subnet_mapping)
+  vpc        = true
   depends_on = [aws_internet_gateway.edmz_igw]
 }
 
@@ -80,11 +78,13 @@ resource "aws_eip" "edmz_nat_eip" {
 #------------------------------------------------------------------
 
 resource "aws_nat_gateway" "edmz_nat" {
-  allocation_id = aws_eip.edmz_nat_eip.id
-  subnet_id     = aws_subnet.subnet_edmz_az1.id
+  count         = length(var.az_subnet_mapping)
+
+  allocation_id = element(aws_eip.edmz_nat_eip.*.id, count.index)
+  subnet_id     = element(aws_subnet.subnet_edmz_az.*.id, count.index)
 
   tags = {
-    Name = "${local.appenv}-edmz-1b-nat"
+    Name = "${local.appenv}-edmz-${lookup(var.az_subnet_mapping[count.index], "name")}-nat"
   }
 
   depends_on = [aws_eip.edmz_nat_eip]

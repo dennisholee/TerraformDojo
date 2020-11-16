@@ -20,8 +20,8 @@ variable "subnet_name"{
   description = "Subnet name"
 }
 
-variable "subnet_id"{
-  type        = string
+variable "subnet_ids"{
+  type        = map
   description = "Subnet ID"
 }
 

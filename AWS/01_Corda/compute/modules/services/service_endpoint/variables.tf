@@ -4,6 +4,7 @@ variable "app" {
   description = "Application name"
 }
 
+
 variable "env" {
   type        = string
   description = "Environment name"
@@ -24,7 +25,7 @@ variable "subnet_ids"{
   description = "Subnet ID"
 }
 
-variable "key_pair" {
+variable "service_name" {
   type        = string
-  description = "SSH Key"
+  description = "Service name of VPC endpoint service"
 }

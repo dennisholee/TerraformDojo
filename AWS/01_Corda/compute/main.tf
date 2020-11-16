@@ -31,20 +31,18 @@ module "bastion" {
   env         = "dev"
   vpc_id      = module.vpc.edmz_vpc_id
   subnet_name = "edmz"
-  subnet_id   = module.vpc.edmz_subnet_id 
-  igw         = module.vpc.edmz_igw
+  subnet_ids  = module.vpc.edmz_subnet_ids 
 
   key_pair    = aws_key_pair.deployer.id
 }
 
 module "float" {
-  source = "./modules/services/socks"
+  source = "./modules/services/float"
   app         = "contour"
   env         = "dev"
   vpc_id      = module.vpc.edmz_vpc_id
   subnet_name = "edmz"
-  subnet_id   = module.vpc.edmz_subnet_id 
-  igw         = module.vpc.edmz_igw
+  subnet_ids  = module.vpc.edmz_subnet_ids 
 
   key_pair    = aws_key_pair.deployer.id
 }
@@ -55,15 +53,27 @@ module "socks" {
   env         = "dev"
   vpc_id      = module.vpc.edmz_vpc_id
   subnet_name = "edmz"
-  subnet_id   = module.vpc.edmz_subnet_id 
-  igw         = module.vpc.edmz_igw
+  subnet_ids  = module.vpc.edmz_subnet_ids
 
   key_pair    = aws_key_pair.deployer.id
 }
 
-#-------------------------------------------------------------------------------
-# iDMZ
-#-------------------------------------------------------------------------------
+module "bridge_vpce" {
+  
+  source      = "./modules/services/service_endpoint"
+  app         = "contour"
+  env         = "dev"
+  
+  vpc_id      = module.vpc.edmz_vpc_id
+  subnet_name = "idmz"
+  subnet_ids  = module.vpc.idmz_subnet_ids 
+
+  service_name = module.bridge.service_name
+}
+
+##-------------------------------------------------------------------------------
+## iDMZ
+##-------------------------------------------------------------------------------
 
 module "bridge" {
   source      = "./modules/services/bridge"
@@ -72,7 +82,21 @@ module "bridge" {
 
   vpc_id      = module.vpc.idmz_vpc_id
   subnet_name = "idmz"
-  subnet_id   = module.vpc.idmz_subnet_id 
+  subnet_ids  = module.vpc.idmz_subnet_ids 
 
   key_pair    = aws_key_pair.deployer.id
 }
+
+
+module "corda" {
+  source      = "./modules/services/corda"
+  app         = "contour"
+  env         = "dev"
+
+  vpc_id      = module.vpc.idmz_vpc_id
+  subnet_name = "idmz"
+  subnet_ids  = module.vpc.idmz_subnet_ids 
+
+  key_pair    = aws_key_pair.deployer.id
+}
+

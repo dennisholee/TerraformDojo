@@ -13,7 +13,6 @@ provider "aws" {
 resource "aws_eip" "eip_bastion" {
   vpc      = true
   instance = aws_instance.instance_bastion.id
-  depends_on = [local.igw]
 
   tags = {
     Name = "${local.appenv}-${local.subnet_name}-bastion-eip"
@@ -75,7 +74,7 @@ resource "aws_instance" "instance_bastion" {
   key_name                    = var.key_pair
   associate_public_ip_address = true
 
-  subnet_id                   = local.subnet_id
+  subnet_id                   = values(var.subnet_ids)[0]
 
   vpc_security_group_ids      = [aws_security_group.sg_allow_ssh.id]
 
@@ -93,7 +92,4 @@ resource "aws_instance" "instance_bastion" {
 locals {
   appenv      = "${var.app}-${var.env}"
   subnet_name = var.subnet_name
-  subnet_id   = var.subnet_id
-
-  igw         = var.igw
 }

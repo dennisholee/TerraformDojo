@@ -95,10 +95,10 @@ resource "aws_lb_target_group" "float_lbtg" {
 }
 
 resource "aws_autoscaling_group" "float_asg" {
-  vpc_zone_identifier  = [var.subnet_id]
-  desired_capacity     = 3
-  max_size             = 3
-  min_size             = 3
+  vpc_zone_identifier  = values(var.subnet_ids)
+  desired_capacity     = 1 
+  max_size             = 1
+  min_size             = 1
 
   launch_configuration = aws_launch_configuration.float_lcf.id
   target_group_arns    = [aws_lb_target_group.float_lbtg.arn] 
@@ -124,7 +124,7 @@ resource "aws_lb" "float_lb" {
   internal           = true
   load_balancer_type = "network"
 
-  subnets            = [local.subnet_id]
+  subnets            = values(var.subnet_ids)
 
   enable_deletion_protection = true
 
@@ -152,9 +152,6 @@ resource "aws_lb_listener" "float_lb_listener"{
 locals {
   appenv      = "${var.app}-${var.env}"
   subnet_name = var.subnet_name
-  subnet_id   = var.subnet_id
-
-  igw         = var.igw
 
   float_vpce_name = "${var.app}-${var.env}-${var.subnet_name}-socks-vpce"
 }

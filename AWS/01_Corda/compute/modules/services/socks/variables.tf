@@ -20,15 +20,9 @@ variable "subnet_name"{
   description = "Subnet name"
 }
 
-variable "subnet_id"{
-  type        = string
+variable "subnet_ids"{
+  type        = map
   description = "Subnet ID"
-}
-
-
-variable "igw"{
-  type        = string
-  description = "Internet gateway"
 }
 
 variable "key_pair" {

@@ -1,38 +1,30 @@
 provider "aws" {
-  region = "us-east-1"
-}
-
-locals {
-    idmz_cidr    = "172.17.0.0/16"
-    idmz_subnet1 = "172.17.1.0/24"
+  region = var.region
 }
 
 #===============================================================================
 # VPC
 #===============================================================================
 
-#-------------------------------------------------------------------------------
-# iDMZ
-#-------------------------------------------------------------------------------
-
 resource "aws_vpc" "vpc_idmz" {
-  cidr_block = local.idmz_cidr
+  cidr_block = var.idmz_cidr
   tags = {
     Name = "${local.appenv}-idmz-vpc"
   }
 }
 
-resource "aws_subnet" "subnet_idmz_az1" {
-  vpc_id            = aws_vpc.vpc_idmz.id
-  cidr_block        = local.idmz_subnet1
-  availability_zone = "us-east-1a"
+resource "aws_subnet" "subnet_idmz_az" {
+  count                   = length(var.az_subnet_mapping)
+
+  vpc_id                  = aws_vpc.vpc_idmz.id
+  cidr_block              = lookup(var.az_subnet_mapping[count.index], "cidr")
+  availability_zone       = lookup(var.az_subnet_mapping[count.index], "az")
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${local.appenv}-idmz-1a-subnet"
+    Name = "${local.appenv}-idmz-${lookup(var.az_subnet_mapping[count.index], "name")}-subnet"
   }
 }
-
 
 #===============================================================================
 # Local Variables 

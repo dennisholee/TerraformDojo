@@ -16,8 +16,8 @@ orm@${PROJECT_ID}.iam.gserviceaccount.com" --key-file-type json
 gcloud services enable \ 
   cloudbuild.googleapis.com \ 
   cloudresourcemanager.googleapis.com \
-  iam.googleapis.com cloud \
-  functions.googleapis.com
+  iam.googleapis.com \
+  cloudfunctions.googleapis.com
 ```
 
 
@@ -25,7 +25,7 @@ gcloud services enable \
 
 Create cloud storage bucket to backup terraform state.
 ```bash
-gsutil mb $(gcloud config get-value project)-tfstate
+gsutil mb gs://$(gcloud config get-value project)-tfstate
 ```
 
 Create SSH Keys to connect to compute resources

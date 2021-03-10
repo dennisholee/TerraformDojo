@@ -20,4 +20,9 @@ module "compute" {
   source  = "./modules/internal"
 
   my-vpc-internal = "${module.vpc.my-vpc-internal}"
+  my-vpc-dmz      = "${module.vpc.my-vpc-dmz}"
+}
+
+module "kms" {
+  source = "./modules/kms"
 }

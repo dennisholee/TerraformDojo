@@ -8,3 +8,5 @@ spec:
   containers:
   - name: mongo
     image: asia.gcr.io/foo789-terraform-admin/mongo:latest
+    ports:
+    - containerPort: 27017

@@ -48,6 +48,12 @@ resource "google_project_iam_binding" "sa-bigquery-iam" {
   members = ["serviceAccount:${var.project_id}@appspot.gserviceaccount.com"]
 }
 
+
+resource "google_project_iam_binding" "sa-bigtable-iam" {
+  role   = "roles/bigtable.user"
+  members = ["serviceAccount:${var.project_id}@appspot.gserviceaccount.com"]
+}
+
 #-------------------------------------------------------------------------------
 # PubSub
 #-------------------------------------------------------------------------------
@@ -78,6 +84,21 @@ resource "google_pubsub_subscription" "pub-bq-subscription" {
 resource "google_storage_bucket" "image-bucket" {
   name     = "${local.bucket}"
   location = "${local.region}"
+}
+
+# ------------------------------------------------------------------------------
+# Big Table
+# ------------------------------------------------------------------------------
+
+resource "google_bigtable_instance" "development-bt" {
+  name          = "${local.app}-bt"
+  instance_type = "DEVELOPMENT"
+
+  cluster {
+    cluster_id   = "${local.app}-bt-cluster"
+    zone         = "${local.zone}"
+    storage_type = "HDD"
+  }
 }
 
 # ------------------------------------------------------------------------------

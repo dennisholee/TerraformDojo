@@ -157,6 +157,16 @@ resource "aws_s3_bucket" "doc-bucket" {
   }
 }
 
+resource "aws_s3_bucket" "private-bucket" {
+  bucket = "${local.appenv}-${random_string.random.result}-private-bucket"
+  acl    = "private"
+
+  tags = {
+    Name        = "${local.appenv}-private-bucket"
+    Environment = var.env
+  }
+}
+
 resource "aws_s3_bucket_object" "dist" {
   for_each = fileset("../s3", "*")
 
@@ -222,6 +232,22 @@ resource "aws_iam_instance_profile" "test_profile" {
 resource "aws_vpc_endpoint" "s3" {
   vpc_id       = aws_vpc.vpc.id
   service_name = var.s3_vpc_endpoint
+  policy        = <<POLICY
+{
+    "Statement": [
+       {
+         "Action": ["s3:Get*",
+           "s3:List*"
+         ],
+         "Effect": "Allow",
+         "Resource": [ "${aws_s3_bucket.doc-bucket.arn}",
+                       "${aws_s3_bucket.doc-bucket.arn}/*"],
+         "Principal": "*"
+       }
+     ]
+}
+POLICY
+  
 }
 
 resource "aws_route_table" "s3" {
@@ -241,3 +267,4 @@ resource "aws_route_table_association" "s3" {
   subnet_id      = aws_subnet.subnet_az[1].id
   route_table_id = aws_route_table.s3.id
 }
+

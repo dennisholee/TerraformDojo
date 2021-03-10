@@ -204,3 +204,28 @@ resource "aws_lambda_function" "job-trigger-lambda" {
   source_code_hash = base64sha256(data.archive_file.source.output_path)
   handler          = "index.handler"
 }
+
+
+#-------------------------------------------------------------------------------
+# Workflow
+#-------------------------------------------------------------------------------
+
+resource "aws_sfn_state_machine" "sfn_state_machine" {
+  name     = "my-state-machine"
+  role_arn = aws_iam_role.role.arn
+  type     = "EXPRESS"
+
+  definition = <<EOF
+{
+  "Comment": "A Hello World example of the Amazon States Language using an AWS Lambda Function",
+  "StartAt": "HelloWorld",
+  "States": {
+    "HelloWorld": {
+      "Type": "Task",
+      "Resource": "${aws_lambda_function.job-trigger-lambda.arn}",
+      "End": true
+    }
+  }
+}
+EOF
+}

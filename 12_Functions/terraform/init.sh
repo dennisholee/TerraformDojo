@@ -15,12 +15,12 @@ gcloud iam service-accounts keys create terraform-sa-key.json \
 gcloud services enable \ 
   cloudbuild.googleapis.com \ 
   cloudresourcemanager.googleapis.com \
-  iam.googleapis.com cloud \
-  functions.googleapis.com
+  iam.googleapis.com \
+  cloudfunctions.googleapis.com
 
 ## Initialize terraform on GShell.
 
-gsutil mb $(gcloud config get-value project)-tfstate
+gsutil mb gs://$(gcloud config get-value project)-tfstate
 
 # Create SSH Keys to connect to compute resources
 # Note the location of the generate key will be used in the subsequent docker commands

@@ -40,6 +40,17 @@ module "internal-testbox-svr" {
   testbox_server-tags   = ["fw-ssh-ingress"]
 }
 
+
+module "internal-squid" {
+  source = "./modules/services/router"
+
+  router_server-name             = "internal-idmz-squid"
+  router_server-primary_subnet   = "${module.global.my-internal-subnet}"
+  router_server-secondary_subnet = "${module.global.my-internal-subnet}"
+  router_server-zone             = "europe-west2-a"
+  router_server-tags             = ["fw-ssh-ingress", "fw-internal-proxy-ingress"]
+}
+
 # TODO: Add internal web server
 # module "int-web-svr" {
 #   source = "./modules/services/web/"
@@ -73,6 +84,17 @@ module "internal-testbox-svr" {
 #   firewall-ports         = ["80"]
 #   firewall-target_tags   = ["fw-internal-http-ingress"] 
 # }
+
+module "fw-internal-proxy-ingress" {
+  source = "./modules/firewalls/"
+
+  firewall-name          = "fw-internal-proxy-ingress"
+  firewall-network       = "${module.global.my-internal-subnet}"
+  firewall-direction     = "ingress"
+  firewall-protocol      = "TCP"
+  firewall-ports         = ["3128"]
+  firewall-target_tags   = ["fw-internal-proxy-ingress"] 
+}
 
 # ------------------------------------------------------------------------------
 # iDMZ subnetwork

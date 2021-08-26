@@ -37,3 +37,8 @@ variable internal_cidr {
   type        = string
   default     = "173.17.2.0/24"
 }
+
+variable email_address {
+  description = ""
+  type        = string
+}

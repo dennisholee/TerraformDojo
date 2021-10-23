@@ -8,7 +8,10 @@ provider "azurerm" {
 locals {
   appenv   = "${var.app}-${var.env}"
   location = "westus2" 
+  tags     = merge({"env" = format("%s", var.env), "app" = format("%s", var.app)}, var.tags, )
 }
+
+data "azurerm_client_config" "current" {}
 
 data "azurerm_resource_group" "resource-group" {
   name     = var.resource_group
@@ -29,6 +32,14 @@ resource "azurerm_virtual_network" "demo" {
 # Subnets
 #-------------------------------------------------------------------------------
 
+resource "azurerm_subnet" "demo-subnet-firewall" {
+  name                 = "AzureFirewallSubnet"
+  
+  resource_group_name  = data.azurerm_resource_group.resource-group.name
+  virtual_network_name = azurerm_virtual_network.demo.name
+  address_prefixes     = [var.firewall_cidr]
+}
+
 resource "azurerm_subnet" "demo-subnet-frontend" {
   name                 = "${local.appenv}-subnet-frontend"
   
@@ -44,6 +55,77 @@ resource "azurerm_subnet" "demo-subnet-backend" {
   virtual_network_name = azurerm_virtual_network.demo.name
   address_prefixes     = [var.internal_cidr]
 }
+
+#-------------------------------------------------------------------------------
+# Firewall
+#-------------------------------------------------------------------------------
+
+ resource "azurerm_firewall" "example" {
+   name                = "${local.appenv}-firewall"
+   location            = local.location
+   resource_group_name = data.azurerm_resource_group.resource-group.name
+   firewall_policy_id  = azurerm_firewall_policy.example.id
+
+   ip_configuration {
+     name                 = "ipconfFW"
+     subnet_id            = azurerm_subnet.demo-subnet-firewall.id
+     public_ip_address_id = azurerm_public_ip.loadbalancer.id
+   }
+ }
+
+resource "azurerm_firewall_policy" "example" {
+  name                = "${local.appenv}-firewall-policy"
+  resource_group_name = data.azurerm_resource_group.resource-group.name
+  location            = local.location
+}
+
+resource "azurerm_firewall_policy_rule_collection_group" "example" {
+  name                = "${local.appenv}-rule-collection-group"
+  #azure_firewall_name = azurerm_firewall.example.name
+  firewall_policy_id  = azurerm_firewall_policy.example.id
+  #resource_group_name = data.azurerm_resource_group.resource-group.name
+  priority            = 100
+  #action              = "Dnat"
+
+  nat_rule_collection {
+    name     = "Nat rule collection"
+    action   = "Dnat"
+    priority = 100
+    rule {
+      name = "http"
+  
+      source_addresses = ["0.0.0.0/0"]
+  
+      destination_ports = ["80"]
+  
+      destination_address = azurerm_public_ip.loadbalancer.ip_address
+  
+      translated_port = 80
+  
+      translated_address = azurerm_lb.loadbalancer.private_ip_address 
+  
+      protocols = ["TCP"]
+    }
+  
+    
+    rule {
+      name = "ssh"
+  
+      source_addresses = ["0.0.0.0/0"]
+  
+      destination_ports = ["22"]
+  
+      destination_address = azurerm_public_ip.loadbalancer.ip_address
+  
+      translated_port = 22
+  
+      translated_address = azurerm_lb.loadbalancer.private_ip_address 
+  
+      protocols = ["TCP"]
+    }
+  }
+}
+
 
 #-------------------------------------------------------------------------------
 # Network Security Group
@@ -194,7 +276,9 @@ resource "azurerm_lb" "loadbalancer" {
 
   frontend_ip_configuration {
     name                 = "${local.appenv}-loadbalancer-ip-config"
-    public_ip_address_id = azurerm_public_ip.loadbalancer.id
+    # public_ip_address_id = azurerm_public_ip.loadbalancer.id
+
+    subnet_id            = azurerm_subnet.demo-subnet-frontend.id 
   }
 }
 
@@ -255,6 +339,83 @@ resource "azurerm_lb_backend_address_pool_address" "loadbalancer" {
 #===============================================================================
 
 #-------------------------------------------------------------------------------
+# Disk Encryption
+#-------------------------------------------------------------------------------
+
+resource "random_string" "rand" {
+  length = 4
+  special = false
+  upper = false
+}
+
+resource "azurerm_key_vault" "example" {
+  name                        = "${local.appenv}-keyvault-${random_string.rand.result}"
+  location                    = local.location
+  resource_group_name         = data.azurerm_resource_group.resource-group.name
+  tenant_id                   = data.azurerm_client_config.current.tenant_id
+  sku_name                    = "premium"
+  enabled_for_disk_encryption = true
+  purge_protection_enabled    = true
+}
+
+resource "azurerm_key_vault_key" "example" {
+  name         = "des-example-key"
+  key_vault_id = azurerm_key_vault.example.id
+  key_type     = "RSA"
+  key_size     = 2048
+
+  depends_on = [
+    azurerm_key_vault_access_policy.example-user
+  ]
+
+  key_opts = [
+    "decrypt",
+    "encrypt",
+    "sign",
+    "unwrapKey",
+    "verify",
+    "wrapKey",
+  ]
+}
+
+resource "azurerm_disk_encryption_set" "example" {
+  name                = "des"
+  resource_group_name = data.azurerm_resource_group.resource-group.name
+  location            = local.location
+  key_vault_key_id    = azurerm_key_vault_key.example.id
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+
+resource "azurerm_key_vault_access_policy" "example-disk" {
+  key_vault_id = azurerm_key_vault.example.id
+
+  tenant_id = azurerm_disk_encryption_set.example.identity.0.tenant_id
+  object_id = azurerm_disk_encryption_set.example.identity.0.principal_id
+
+  key_permissions = [
+    "Get",
+    "WrapKey",
+    "UnwrapKey"
+  ]
+}
+
+resource "azurerm_key_vault_access_policy" "example-user" {
+  key_vault_id = azurerm_key_vault.example.id
+
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  object_id = data.azurerm_client_config.current.object_id
+
+  key_permissions = [
+    "get",
+    "create",
+    "delete"
+  ]
+}
+
+#-------------------------------------------------------------------------------
 # Web VM
 #-------------------------------------------------------------------------------
 
@@ -274,8 +435,9 @@ resource "azurerm_linux_virtual_machine" "demo" {
   }
 
   os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
+    caching                = "ReadWrite"
+    storage_account_type   = "Standard_LRS"
+    disk_encryption_set_id = azurerm_disk_encryption_set.example.id
   }
 
   source_image_reference {
@@ -426,7 +588,7 @@ resource "azurerm_log_analytics_workspace" "log-analytics-workspace" {
 }
 
 resource "azurerm_log_analytics_solution" "log-analytics-solution" {
-  solution_name         = "ContainerInsights"
+  solution_name         = "VMInsights"
   location              = local.location
   resource_group_name   = data.azurerm_resource_group.resource-group.name
   workspace_resource_id = azurerm_log_analytics_workspace.log-analytics-workspace.id
@@ -438,8 +600,37 @@ resource "azurerm_log_analytics_solution" "log-analytics-solution" {
   }
 }
 
-resource "azurerm_virtual_machine_extension" "oms_mma02" {
-  name                       = "test-OMSExtension"
+#-------------------------------------------------------------------------------
+# Install Azure monitor agent
+#-------------------------------------------------------------------------------
+
+resource "azurerm_virtual_machine_extension" "azure-monitor-agent" {
+  name                       = "${local.appenv}-vm-extension-azure-monitor-agent"
+  virtual_machine_id         =  azurerm_linux_virtual_machine.demo.id
+  publisher                  = "Microsoft.Azure.Monitor"
+  type                       = "AzureMonitorLinuxAgent"
+  type_handler_version       = "1.5"
+  auto_upgrade_minor_version = true
+
+  settings = <<SETTINGS
+    {
+      "workspaceId" : "${azurerm_log_analytics_workspace.log-analytics-workspace.workspace_id}"
+    }
+  SETTINGS
+
+  protected_settings = <<PROTECTED_SETTINGS
+    {
+      "workspaceKey" : "${azurerm_log_analytics_workspace.log-analytics-workspace.primary_shared_key}"
+    }
+  PROTECTED_SETTINGS
+}
+
+#-------------------------------------------------------------------------------
+# Install Log Analytics agent to enable Log Analytics agent
+#-------------------------------------------------------------------------------
+
+resource "azurerm_virtual_machine_extension" "oms-agent" {
+  name                       = "${local.appenv}-vm-extension-oms-agent"
   virtual_machine_id         =  azurerm_linux_virtual_machine.demo.id
   publisher                  = "Microsoft.EnterpriseCloud.Monitoring"
   type                       = "OmsAgentForLinux"
@@ -459,14 +650,18 @@ resource "azurerm_virtual_machine_extension" "oms_mma02" {
   PROTECTED_SETTINGS
 }
 
-resource "azurerm_virtual_machine_extension" "da" {
-  name                       = "DAExtension"
+#-------------------------------------------------------------------------------
+# Install Log Analytics agent to enable Dependency agent
+#-------------------------------------------------------------------------------
+
+resource "azurerm_virtual_machine_extension" "dependency-agent" {
+  name                       = "${local.appenv}-vm-extension-dependency-agent"
   virtual_machine_id         = azurerm_linux_virtual_machine.demo.id
   publisher                  = "Microsoft.Azure.Monitoring.DependencyAgent"
   type                       = "DependencyAgentLinux"
   type_handler_version       = "9.5"
   auto_upgrade_minor_version = true
-
+  depends_on                 = [azurerm_virtual_machine_extension.oms-agent]
 }
 
 resource "azurerm_virtual_machine_scale_set_extension" "monitoring" {
@@ -490,4 +685,60 @@ resource "azurerm_virtual_machine_scale_set_extension" "monitoring" {
   PROTECTED_SETTINGS
 
   #depends_on = [ azurerm_kubernetes_cluster.aks-cluster ]
+}
+
+#===============================================================================
+# Event Trigger
+#===============================================================================
+
+# resource "azurerm_eventhub_namespace" "eventhub-namespace" {
+#   name                = "${local.appenv}-eventhub-namespace"
+#   location            = local.location
+#   resource_group_name = data.azurerm_resource_group.resource-group.name
+#   sku                 = "Standard"
+#   capacity            = 1
+# 
+#   tags = {
+#     environment = var.env
+#   }
+# }
+# 
+# resource "azurerm_eventhub" "eventhub" {
+#   name                = "${local.appenv}-eventhub"
+#   namespace_name      = azurerm_eventhub_namespace.eventhub-namespace.name
+#   resource_group_name = data.azurerm_resource_group.resource-group.name
+#   partition_count     = 2
+#   message_retention   = 1
+# }
+# 
+# resource "azurerm_monitor_log_profile" "example" {
+#   name = "default"
+# 
+#   categories = [
+#     "Action",
+#     "Delete",
+#     "Write",
+#   ]
+# 
+#   locations = [
+#     "westus",
+#     "global",
+#   ]
+# 
+#   # RootManageSharedAccessKey is created by default with listen, send, manage permissions
+#   servicebus_rule_id = "${azurerm_eventhub_namespace.eventhub-namespace.id}/authorizationrules/RootManageSharedAccessKey"
+#   #storage_account_id = azurerm_storage_account.example.id
+# 
+#   retention_policy {
+#     enabled = true
+#     days    = 7
+#   }
+# }
+
+#===============================================================================
+# Security
+#===============================================================================
+
+resource "azurerm_security_center_server_vulnerability_assessment" "example" {
+  virtual_machine_id = azurerm_linux_virtual_machine.demo.id
 }

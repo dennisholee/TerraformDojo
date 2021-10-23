@@ -83,8 +83,8 @@ resource "azurerm_linux_virtual_machine" "demo" {
 
 resource "azurerm_eventhub_namespace" "demo" {
   name                = "${local.appenv}-eventhub-namespace"
-  location            = azurerm_resource_group.resource-group.location
-  resource_group_name = azurerm_resource_group.resource-group.name
+  location            = data.azurerm_resource_group.resource-group.location
+  resource_group_name = data.azurerm_resource_group.resource-group.name
   sku                 = "Standard"
   capacity            = 1
 
@@ -95,8 +95,8 @@ resource "azurerm_eventhub_namespace" "demo" {
 
 resource "azurerm_eventhub" "demo" {
   name                = "${local.appenv}-eventhub"
-  namespace_name      = azurerm_eventhub_namespace.eventhub-namespace.name
-  resource_group_name = azurerm_resource_group.resource-group.name
+  namespace_name      = azurerm_eventhub_namespace.demo.name
+  resource_group_name = data.azurerm_resource_group.resource-group.name
   partition_count     = 2
   message_retention   = 1
 }
